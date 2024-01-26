@@ -6,6 +6,12 @@ __pycache__/
 # C extensions
 *.so
 
+# Project Specific
+train.zip
+/train
+
+# Mac Specific
+
 # Distribution / packaging
 .Python
 build/
