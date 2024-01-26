@@ -8,7 +8,6 @@ __pycache__/
 
 # Project Specific
 train.zip
-/train
 
 # Mac Specific
 .DS_Store
