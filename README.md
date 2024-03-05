@@ -1,37 +1,56 @@
-# Segmentation - Legrand Frédéric
-Image segmentation ECL23 with Liming Chen
+# BE 1 - Vision par ordinateur - Martin Guillerm and Frédéric Legrand
 
-# Questions
-## Max pooling
+This work is our result in the computer vision course at ECL, here is the subject of our work: https://docs.google.com/document/d/1sbqmVY4H_FXkWiGUhXTxQqwH9pGkD-1YSO64tkrLf38/edit.
 
-It's possible to use convolution as this operation will also reduce the size of the layer and result in a similar effect.
+The aim of this work is to predict and locate the presence of salt deposits using seismic images.
 
-Using strided convolutions instead of max pooling can be beneficial as it reduces the amount of operations and parameters in the model. 
-However, max pooling helps prevent overfitting by providing a form of translation invariance. So replacing max pooling with strided convolutions may lead to worse performance due to overfitting, unless additional regularization is used.
+This is the collaborative work of Martin Guillerm and Frederic Legrand.
 
-## Skip connections
+## Model implementation : 
 
-The skip connections allow the decoder network to utilize features from the encoder network. 
-This helps the model have both a global broader view of the image and its context as well as a precise very localised knowledge. 
-The model can thus reconstruct finer details in the output segmentation mask. 
-Without the skip connections, the decoder would have limited knowledge of larger features extracted by the encoder, so the output segmentation would be less precise. 
-The skip connections could in theory use other operations like addition or multiplication, but concatenation seems to produce the best results as it helps the network have both a localised and a general view of the image.
+We have built a model based on the following picture : 
 
-## FCN and Auto-encoder
+![alt text](model.png)
 
-A regular FCN keeps the spatial dimensions constant through the whole network. 
-This means the receptive field of the network is limited, so the context captured is smaller. 
-The encoder-decoder structure allows aggregating larger context by gradually reducing spatial dimensions, enabling the model to incorporate more global information. 
-The expanding path then helps refine the localization. 
-So the encoder-decoder structure is better suited for dense prediction tasks like segmentation because it can "Zoom in" to smaller details of the image while retaining a more global sense.
+after training and validation we could obtain this type of result :
 
-## Threshold for inference
+### Original Image |  Real Mask   | Predicted Mask
+![alt text](output.png)
 
-In our case, precision is defined as the number of pixels that are correctly predicted as salt over the total number of pixels predicted as salt.
+## Questions : 
 
-Recall is the number of pixels that are correctly predicted as salt over the total number of pixels that are really salt.
+### Max Pooling :
 
-To optimize both precision and recall, we could make use of the ROC curve and more specifically the ROC AUC that gives us a number between 0 and 1 that indicates the performance of the model with respect to the inference threshold. 
-The ROC AUC number gives us a direct way to compare inference threshold values and choose the best one.
+Of course we can use strided convolution insted of max pooling. This will reduce the number of operations as the convolutional layer itself performs both dimensionality reduction and feature extraction, whereas max pooling only reduces dimensionality by retaining only the maximum value in each region.
 
-A "perfect" parameterization would result in a ROC AUC value of 1.
+Nonetheless, Max pooling can help prevent overfitting by reducing dimensionality and introducing translational invariance in the extracted features. This can act as a form of regularization by preventing the model from over-adapting to specific details in the training data.
+
+In comparison, convolution with a stride of 2 may not provide the same type of implicit regularization because it retains more spatial information and may potentially allow the model to memorize finer details of the training data, which can lead to greater overfitting.
+
+In this context, max pooling can be considered a more direct technique for preventing overfitting, by reducing dimensionality in a nonlinear manner and introducing spatial invariance.
+
+### Skip Connections :
+
+The skip connections are important because they allow to preserve information at different spatial scales within the network. In our case, they allow the decoder to obtain information from the encoder that it would not have access to otherwise.
+
+By removing these connections, the model would lose this ability to integrate information from different spatial resolutions, which could result in a loss of performance, especially for tasks requiring a global understanding of the data, such as semantic image segmentation.
+
+Instead of concatenation, it would be possible to use addition or Min and Max functions. For example, Max would favor the most important features while Min would focus on the least frequent points. However, concatenation seems to produce the best results as it allows the network to have both a localized and a global view of the image.
+
+### FCN and Auto-encoder :
+
+A FCN uses convolutional layers without fully connected layers to preserve the image size throughout the process. This means that the receptive field of the network is limited, so the captured context is more restricted. 
+
+Therefore, even if using a FCN is possible in our case, the autoencoder remains the best choice. Indeed, by gradually reducing spatial dimensions, the autoencoder will be able to incorporate more global information. Then, the expansion path will refine the localization. Thus, we will have finer and more precise results than with a FCN while still maintaining a good global sense of the image.
+
+### Threshold for inference :
+
+In our case, where we classify pixels as salt or non-salt for image segmentation, precision is defined as the number of pixels correctly classified as salt (true positives) divided by the total number of pixels classified as salt (true positives + false positives). Recall is defined as the number of pixels correctly classified as salt (true positives) divided by the total number of pixels that are actually salt (true positives + false negatives). 
+
+If we want to optimize precision, we can increase this threshold. This would classify fewer pixels as salt, but those that are would be more likely to be correct. However, this could decrease recall because some pixels that are actually salt could be classified as non-salt. Conversely, if we need high recall (to minimize false negatives), we could lower the threshold. This would classify more pixels as salt, but it would also increase the risk of false positives. 
+
+By adjusting the threshold appropriately, depending on the specific needs of our use case, we could find a balance between precision and recall to achieve the best possible results.
+
+It is also possible to use ROC AUC curves. The ROC curve represents the performance of a binary classification model at different classification thresholds. It plots the true positive rate (recall) against the false positive rate for different classification thresholds. The AUC measures the model's ability to correctly classify positive examples compared to negative examples, regardless of the classification threshold. 
+
+To optimize both precision and recall, we could choose the classification threshold that maximizes both precision and recall or maximizes the AUC of the ROC curve. If we are seeking a compromise between precision and recall, we could choose the threshold that balances these two metrics according to the specific needs of our use case.
